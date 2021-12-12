@@ -9,7 +9,8 @@ public class Order implements Comparable<Order> {
     private List<String> meals;
     private double distance;
     private int slotsRequired;
-    private double totalTimeRequired;
+    private double preparationTimeRequired;
+    private double actualDeliveryTime;
 
     public int getOrderId() {
         return orderId;
@@ -36,16 +37,22 @@ public class Order implements Comparable<Order> {
     }
 
     public int getSlotsRequired() {
+        calculateSlotsRequired();
         return slotsRequired;
     }
 
-    public void calculateSlotsRequired(Order order) {
-        if (order.getMeals().isEmpty()) {
+    public double getPreparationTimeRequired() {
+        calculatePreparationTimeRequired();
+        return preparationTimeRequired;
+    }
+
+    private void calculateSlotsRequired() {
+        if (meals.isEmpty()) {
             this.slotsRequired = 0;
         }
 
         int totalSlotsRequired = 0;
-        for (String meal : order.getMeals()) {
+        for (String meal : meals) {
             if (meal.equals("A")) {
                 totalSlotsRequired += 1;
             } else if (meal.equals("M")) {
@@ -56,38 +63,42 @@ public class Order implements Comparable<Order> {
         this.slotsRequired = totalSlotsRequired;
     }
 
-    private double calculateCookingTimeForOrder(Order order) {
+    public void calculatePreparationTimeRequired() {
+        double preparationTimeRequired = 0;
+        preparationTimeRequired += calculateCookingTimeForOrder();
+        preparationTimeRequired += calculateDeliveryTimeForOrder();
+
+        this.preparationTimeRequired = preparationTimeRequired;
+    }
+
+    private double calculateCookingTimeForOrder() {
         double orderCookingTime = 0;
-        for (String meal : order.getMeals()) {
+        for (String meal : meals) {
             if (meal.equals("A")) {
-                orderCookingTime = Math.max(orderCookingTime, OrderConfig.MEAL_TIME_FOR_APPETIZER_IN_MINUTES);
+                orderCookingTime = Math.max(orderCookingTime, OrderConfig.PREPARATION_TIME_FOR_APPETIZER_IN_MINUTES);
             } else if (meal.equals("M")) {
-                orderCookingTime = Math.max(orderCookingTime, OrderConfig.MEAL_TIME_FOR_MAIN_COURSE_IN_MINUTES);
+                orderCookingTime = Math.max(orderCookingTime, OrderConfig.PREPARATION_TIME_FOR_MAIN_COURSE_IN_MINUTES);
             }
         }
 
         return orderCookingTime;
     }
 
-    private double calculateDeliveryTimeForOrder(Order order) {
-        return order.getDistance() * OrderConfig.DELIVERY_TIME_TAKEN_PER_KILOMETER;
+    private double calculateDeliveryTimeForOrder() {
+        return distance * OrderConfig.DELIVERY_TIME_TAKEN_PER_KILOMETER;
     }
 
-    public double getTotalTimeRequired() {
-        return totalTimeRequired;
+    public double getActualDeliveryTime() {
+        return actualDeliveryTime;
     }
 
-    public void calculateTotalTimeRequired(Order order) {
-        double totalTimeRequiredForOrder = 0;
-        totalTimeRequiredForOrder += calculateCookingTimeForOrder(order);
-        totalTimeRequiredForOrder += calculateDeliveryTimeForOrder(order);
-
-        this.totalTimeRequired = totalTimeRequiredForOrder;
+    public void setActualDeliveryTime(double actualDeliveryTime) {
+        this.actualDeliveryTime = actualDeliveryTime;
     }
 
     @Override
     public int compareTo(Order o) {
-        return Double.compare(totalTimeRequired, o.getTotalTimeRequired());
+        return Double.compare(actualDeliveryTime, o.getActualDeliveryTime());
     }
 
     @Override
