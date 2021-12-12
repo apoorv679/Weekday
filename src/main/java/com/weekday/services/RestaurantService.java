@@ -35,8 +35,8 @@ public class RestaurantService {
         while(!processingQueue.isEmpty() && currentOrder.getSlotsRequired() > availableSlots) {
             Order tempOrder = processingQueue.poll();
             availableSlots += tempOrder.getSlotsRequired();
-            tempOrderList.add(tempOrder);
             waitTimeForCurrentOrder = tempOrder.getActualDeliveryTime();
+            tempOrderList.add(tempOrder);
             if (waitTimeForCurrentOrder + currentOrder.getPreparationTimeRequired() > OrderConfig.MAX_WAIT_TIME_FOR_ORDER_IN_MINUTES) {
                 processingQueue.addAll(tempOrderList);
                 RestaurantUtils.printResultForOrder(OrderStatusEnum.ORDER_FAILURE_TIME_REQUIRED, currentOrder.getOrderId());
@@ -51,15 +51,18 @@ public class RestaurantService {
     public void calculateFoodDeliveryTimes(List<Order> orders) {
         PriorityQueue<Order> orderProcessingQueue = new PriorityQueue<>();
 
+        Double waitTimeForOrder;
+        double totalTimeSpentInWaiting = 0;
         for (Order order : orders) {
             if (isOrderValid(order)) {
-                Double waitTimeForOrder = 0.0;
+                waitTimeForOrder = totalTimeSpentInWaiting;
                 if (order.getSlotsRequired() > restaurant.getAvailableSlots()) {
                     waitTimeForOrder = getWaitTimeFromRequiredSlots(orderProcessingQueue, order);
+                    totalTimeSpentInWaiting = waitTimeForOrder != null ? waitTimeForOrder : totalTimeSpentInWaiting;
                 }
 
                 if (waitTimeForOrder != null) {
-                    order.setActualDeliveryTime(order.getPreparationTimeRequired() + waitTimeForOrder);
+                    order.setActualDeliveryTime(order.getPreparationTimeRequired() + totalTimeSpentInWaiting);
                     RestaurantUtils.printResultForOrder(OrderStatusEnum.ORDER_SUCCESS, order.getOrderId(), order.getActualDeliveryTime());
                     int slotsAvailable = restaurant.getAvailableSlots() - order.getSlotsRequired();
                     restaurant.setAvailableSlots(slotsAvailable);
